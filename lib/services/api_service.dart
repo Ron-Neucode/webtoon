@@ -1,18 +1,25 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../models/webtoon.dart';
 
 class ApiService {
-  static const String baseUrl =
-      "https://mocki.io/v1/your-mock-json"; // Replace with MangaDex or your own API
+  static const String baseUrl = 'https://api.mangadex.org/manga';
 
-  static Future<List<Webtoon>> fetchWebtoons() async {
-    final response = await http.get(Uri.parse(baseUrl));
-    if (response.statusCode == 200) {
-      List data = jsonDecode(response.body);
-      return data.map((json) => Webtoon.fromJson(json)).toList();
-    } else {
-      throw Exception("Failed to load webtoons");
+  static Future<List<Webtoon>> fetchWebtoons({int limit = 20}) async {
+    final dio = Dio();
+    try {
+      final response = await dio.get(
+        baseUrl,
+        queryParameters: {'limit': limit, 'includes[]': 'cover_art'},
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data['data'];
+        return data.map((json) => Webtoon.fromMangadexJson(json)).toList();
+      } else {
+        print('API response code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('API Error: $e');
     }
+    return [];
   }
 }

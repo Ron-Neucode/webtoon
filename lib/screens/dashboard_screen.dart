@@ -22,11 +22,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Webtoon Dashboard")),
-      body: _tabs[_selectedIndex],
+      appBar: AppBar(title: Text("MangaVerse")),
+      body: IndexedStack(index: _selectedIndex, children: _tabs),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
+        selectedItemColor: Colors.purple,
+        unselectedItemColor: Colors.grey,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
