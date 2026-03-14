@@ -1,0 +1,57 @@
+name: webtoon
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.8
+  flutter_staggered_grid_view: ^0.7.0
+  animations: ^2.0.11
+  flutter_animate: ^4.5.0
+
+  # State Management
+  provider: ^6.1.2
+  # or use riverpod if you prefer:
+  # flutter_riverpod: ^2.5.1
+
+  # Networking
+  dio: ^5.4.0
+  # or http if you want something lighter:
+  # http: ^1.2.0
+
+  # Image Handling
+  cached_network_image: ^3.3.1
+
+  # Persistence
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  shared_preferences: ^2.2.2
+
+  # Authentication (optional, if you plan accounts)
+  # firebase_auth: ^5.1.0
+  # supabase_flutter: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: ComicNeue
+      fonts:
+        - asset: assets/fonts/ComicNeue-Regular.ttf
+        - asset: assets/fonts/ComicNeue-Bold.ttf
+          weight: 700
