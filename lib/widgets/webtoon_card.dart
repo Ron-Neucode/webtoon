@@ -1,13 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/webtoon.dart';
 import '../screens/detail_screen.dart';
 
 class WebtoonCard extends StatelessWidget {
   final Webtoon webtoon;
 
-  const WebtoonCard({Key? key, required this.webtoon}) : super(key: key);
+  const WebtoonCard({super.key, required this.webtoon});
+
+  Future<void> _toggleBookmark(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('loggedInUser');
+    if (username == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to save webtoons')),
+      );
+      return;
+    }
+
+    List<String> library = prefs.getStringList('library_$username') ?? [];
+    if (library.contains(webtoon.title)) {
+      library.remove(webtoon.title);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Removed from library')));
+    } else {
+      library.add(webtoon.title);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Added to library')));
+    }
+
+    await prefs.setStringList('library_$username', library);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +60,11 @@ class WebtoonCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: Colors.grey[300],
-                  child: Center(child: CircularProgressIndicator()),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
                 errorWidget: (context, url, error) => Container(
                   color: Colors.grey[300],
-                  child: Icon(
+                  child: const Icon(
                     Icons.image_not_supported,
                     size: 50,
                     color: Colors.grey,
@@ -45,15 +72,33 @@ class WebtoonCard extends StatelessWidget {
                 ),
               ),
               Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.bookmark_border,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 2,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
+                  onPressed: () => _toggleBookmark(context),
+                ),
+              ),
+              Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.black.withOpacity(0.7),
+                        Colors.black.withValues(alpha: 179),
                         Colors.transparent,
                       ],
                       begin: Alignment.bottomCenter,
@@ -65,7 +110,7 @@ class WebtoonCard extends StatelessWidget {
                     children: [
                       Text(
                         webtoon.title,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -73,7 +118,7 @@ class WebtoonCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       if (webtoon.genres.isNotEmpty)
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
@@ -82,17 +127,18 @@ class WebtoonCard extends StatelessWidget {
                                 .take(3)
                                 .map(
                                   (g) => Padding(
-                                    padding: EdgeInsets.only(right: 4),
+                                    padding: const EdgeInsets.only(right: 4),
                                     child: Chip(
                                       label: Text(
                                         g,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 10,
                                           color: Colors.white,
                                         ),
                                       ),
-                                      backgroundColor: Colors.purple
-                                          .withOpacity(0.8),
+                                      backgroundColor: Colors.purple.withValues(
+                                        alpha: 204,
+                                      ),
                                     ),
                                   ),
                                 )

@@ -1,43 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_screen.dart';
+import 'screens/dashboard_screen.dart';
 
-void main() {
-  runApp(WebtoonApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+
+  final prefs = await SharedPreferences.getInstance();
+  final String? lastUser = prefs.getString('loggedInUser');
+
+  runApp(MyApp(loggedInUsername: lastUser));
 }
 
-class WebtoonApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  final String? loggedInUsername;
+
+  const MyApp({super.key, this.loggedInUsername});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Webtoon System',
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
-        fontFamily: 'ComicNeue',
-        useMaterial3: true,
-        cardTheme: CardThemeData(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        appBarTheme: AppBarTheme(
-          elevation: 0,
-          backgroundColor: Colors.purple[50],
-        ),
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: Colors.purple[50],
-          selectedItemColor: Colors.purple,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
+      title: 'Webtoon App',
+      theme: ThemeData(primarySwatch: Colors.purple),
+      home: Builder(
+        builder: (context) {
+          // Check if a user is logged in
+          if (loggedInUsername != null && loggedInUsername!.isNotEmpty) {
+            return const DashboardScreen();
+          } else {
+            return const LoginScreen();
+          }
+        },
       ),
-      home: LoginScreen(),
     );
   }
 }

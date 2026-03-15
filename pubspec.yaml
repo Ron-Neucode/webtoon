@@ -19,13 +19,10 @@ dependencies:
 
   # State Management
   provider: ^6.1.2
-  # or use riverpod if you prefer:
-  # flutter_riverpod: ^2.5.1
 
   # Networking
   dio: ^5.4.0
-  # or http if you want something lighter:
-  # http: ^1.2.0
+  logger: ^2.4.0
 
   # Image Handling
   cached_network_image: ^3.3.1
@@ -34,15 +31,6 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   shared_preferences: ^2.2.2
-
-  # Authentication (optional, if you plan accounts)
-  # firebase_auth: ^5.1.0
-  # supabase_flutter: ^2.0.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
@@ -55,3 +43,14 @@ flutter:
         - asset: assets/fonts/ComicNeue-Regular.ttf
         - asset: assets/fonts/ComicNeue-Bold.ttf
           weight: 700
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/dfg.jpg"

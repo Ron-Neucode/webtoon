@@ -1,30 +1,76 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:webtoon/main.dart';
+import 'package:webtoon/screens/login_screen.dart';
+import 'package:webtoon/screens/dashboard_screen.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(WebtoonApp());
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  group('App Tests', () {
+    testWidgets('App starts with LoginScreen if not logged in', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MyApp(loggedInUsername: null));
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.text('Welcome Back'), findsOneWidget);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    testWidgets('App starts with DashboardScreen if logged in', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MyApp(loggedInUsername: 'testuser'));
+      expect(find.byType(DashboardScreen), findsOneWidget);
+      expect(find.text('MangaVerse'), findsOneWidget);
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    testWidgets('LoginScreen UI components', (WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+
+      // Fields and buttons
+      expect(find.byType(TextFormField), findsNWidgets(2));
+      expect(find.text('Username'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Login'), findsOneWidget);
+
+      // Toggle to register
+      await tester.tap(find.text("Don't have an account? Register"));
+      await tester.pumpAndSettle();
+      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Create Account'), findsOneWidget);
+    });
+
+    testWidgets('Dashboard bottom nav switches tabs', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: DashboardScreen()));
+      expect(find.text('MangaVerse'), findsOneWidget);
+
+      // Initial home tab
+      expect(
+        find.byType(ListView),
+        findsNothing,
+      ); // Home tab has MasonryGridView, hard to test type
+
+      // Tap categories
+      await tester.tap(find.text('Categories'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FilterChip), findsWidgets);
+
+      // Tap library
+      await tester.tap(find.text('Library'));
+      await tester.pumpAndSettle();
+
+      // Tap profile
+      await tester.tap(find.text('Profile'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CircleAvatar), findsOneWidget);
+    });
   });
 }
