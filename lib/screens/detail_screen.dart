@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/webtoon.dart';
+import 'dart:convert';
 
 class DetailScreen extends StatefulWidget {
   final Webtoon webtoon;
@@ -24,13 +25,27 @@ class _DetailScreenState extends State<DetailScreen> {
     }
 
     List<String> library = prefs.getStringList('library_$username') ?? [];
-    if (library.contains(widget.webtoon.title)) {
-      library.remove(widget.webtoon.title);
+    final webtoonJsonStr = jsonEncode(widget.webtoon.toJson());
+    final isBookmarked = library.any((jsonStr) {
+      try {
+        return jsonDecode(jsonStr)['id'] == widget.webtoon.id;
+      } catch (e) {
+        return false;
+      }
+    });
+    if (isBookmarked) {
+      library.removeWhere((jsonStr) {
+        try {
+          return jsonDecode(jsonStr)['id'] == widget.webtoon.id;
+        } catch (e) {
+          return false;
+        }
+      });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Removed from library')));
     } else {
-      library.add(widget.webtoon.title);
+      library.add(webtoonJsonStr);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Added to library')));

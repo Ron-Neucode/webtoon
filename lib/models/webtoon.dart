@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Webtoon {
   final String id;
   final String title;
@@ -23,6 +25,7 @@ class Webtoon {
     );
   }
 
+  // Mangadex
   factory Webtoon.fromMangadexJson(Map<String, dynamic> json) {
     final attributes = json['attributes'] as Map<String, dynamic>? ?? {};
     String title =
@@ -58,5 +61,53 @@ class Webtoon {
       description: description,
       genres: genres,
     );
+  }
+
+  // Jikan (MAL)
+  factory Webtoon.fromJikanJson(Map<String, dynamic> json) {
+    return Webtoon(
+      id: json['mal_id']?.toString() ?? '',
+      title: json['title'] ?? 'Unknown',
+      thumbnail: json['images']?['jpg']?['image_url'] ?? '',
+      description: json['synopsis'] ?? '',
+      genres: (json['genres'] as List<dynamic>? ?? [])
+          .map((g) => g['name']?.toString() ?? '')
+          .where((g) => g.isNotEmpty)
+          .toList(),
+    );
+  }
+
+  // Kitsu
+  factory Webtoon.fromKitsuJson(Map<String, dynamic> json) {
+    final attributes = json['attributes'] ?? <String, dynamic>{};
+    final titleEn =
+        attributes['titles']?['en'] ??
+        attributes['titles']?['en_jp'] ??
+        'Unknown';
+    String thumbnail = '';
+    final rels = json['relationships'] as List<dynamic>? ?? [];
+    for (var rel in rels) {
+      if (rel['type'] == 'coverArt') {
+        thumbnail = (rel['attributes']?['fileDynamic'] ?? '').toString();
+        break;
+      }
+    }
+    return Webtoon(
+      id: json['id'] ?? '',
+      title: titleEn,
+      thumbnail: thumbnail,
+      description: attributes['description'] ?? '',
+      genres: [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'thumbnail': thumbnail,
+      'description': description,
+      'genres': genres,
+    };
   }
 }

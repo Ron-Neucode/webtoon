@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../services/api_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/mangadex_provider.dart';
 import '../widgets/webtoon_card.dart';
 import '../models/webtoon.dart';
 
@@ -12,30 +13,19 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  late Future<List<Webtoon>> webtoonsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    webtoonsFuture = ApiService.fetchWebtoons(limit: 50);
-  }
-
   Future<void> _refreshWebtoons() async {
-    setState(() {
-      webtoonsFuture = ApiService.fetchWebtoons(limit: 50);
-    });
+    final provider = Provider.of<MangadexProvider>(context, listen: false);
+    await provider.fetchWebtoons(limit: 50);
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Webtoon>>(
-      future: webtoonsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return Consumer<MangadexProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError ||
-            !snapshot.hasData ||
-            snapshot.data!.isEmpty) {
+        }
+        if (provider.error != null || provider.webtoons.isEmpty) {
           return Center(
             child: Card(
               child: Padding(
@@ -45,8 +35,9 @@ class _HomeTabState extends State<HomeTab> {
                   children: [
                     const Icon(Icons.error, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
-                    const Text(
-                      "No webtoons available. Check logs for errors.",
+                    Text(
+                      provider.error ??
+                          "No webtoons available. Check logs for errors.",
                       style: TextStyle(fontSize: 16),
                       textAlign: TextAlign.center,
                     ),
@@ -61,23 +52,22 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
           );
-        } else {
-          final webtoons = snapshot.data!;
-          return RefreshIndicator(
-            onRefresh: _refreshWebtoons,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: MasonryGridView.count(
-                crossAxisCount: 2,
-                itemCount: webtoons.length,
-                itemBuilder: (context, index) =>
-                    WebtoonCard(webtoon: webtoons[index]),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-              ),
-            ),
-          );
         }
+        final webtoons = provider.webtoons;
+        return RefreshIndicator(
+          onRefresh: _refreshWebtoons,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: MasonryGridView.count(
+              crossAxisCount: 2,
+              itemCount: webtoons.length,
+              itemBuilder: (context, index) =>
+                  WebtoonCard(webtoon: webtoons[index]),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+            ),
+          ),
+        );
       },
     );
   }

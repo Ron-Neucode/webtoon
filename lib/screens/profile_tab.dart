@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/theme_provider.dart';
 import '../screens/login_screen.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -10,37 +12,24 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
-  bool _darkMode = false;
-
   Future<void> _showSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    _darkMode = prefs.getBool('darkMode') ?? false;
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Settings'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SwitchListTile(
-              title: const Text('Dark Mode'),
-              value: _darkMode,
-              onChanged: (value) {
-                setState(() {
-                  _darkMode = value;
-                });
-                prefs.setBool('darkMode', value);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Dark mode ${_darkMode ? 'enabled' : 'disabled'}',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+        content: SwitchListTile(
+          title: const Text('Dark Mode'),
+          value: themeProvider.isDarkMode,
+          onChanged: (value) {
+            themeProvider.toggleTheme();
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Dark mode ${value ? 'enabled' : 'disabled'}'),
+              ),
+            );
+          },
         ),
         actions: [
           TextButton(

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../models/webtoon.dart';
+import 'package:provider/provider.dart';
+import '../providers/mangadex_provider.dart';
 import '../widgets/webtoon_card.dart';
+import '../models/webtoon.dart';
 
 class CategoriesTab extends StatefulWidget {
   const CategoriesTab({super.key});
@@ -12,7 +13,7 @@ class CategoriesTab extends StatefulWidget {
 
 class _CategoriesTabState extends State<CategoriesTab> {
   String? selectedGenre;
-  late Future<List<Webtoon>> webtoonsFuture;
+
   final List<String> genres = [
     "Action",
     "Adventure",
@@ -29,17 +30,18 @@ class _CategoriesTabState extends State<CategoriesTab> {
   @override
   void initState() {
     super.initState();
+
     selectedGenre = null;
-    _loadWebtoons();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<MangadexProvider>(context, listen: false);
+      provider.fetchWebtoons(limit: 50);
+    });
   }
 
   Future<void> _loadWebtoons() async {
-    setState(() {
-      webtoonsFuture = ApiService.fetchWebtoons(
-        limit: 50,
-        genre: selectedGenre,
-      );
-    });
+    final provider = Provider.of<MangadexProvider>(context, listen: false);
+    await provider.fetchWebtoons(limit: 50, genre: selectedGenre ?? '');
   }
 
   Future<void> _refreshWebtoons() async {
@@ -48,17 +50,18 @@ class _CategoriesTabState extends State<CategoriesTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: genres
-                  .map(
-                    (genre) => Padding(
+    return Consumer<MangadexProvider>(
+      builder: (context, provider, child) {
+        return Column(
+          children: [
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: genres.map((genre) {
+                    return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         label: Text(genre),
@@ -70,69 +73,67 @@ class _CategoriesTabState extends State<CategoriesTab> {
                           _loadWebtoons();
                         },
                       ),
-                    ),
-                  )
-                  .toList(),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
-          ),
-        ),
-        Expanded(
-          child: FutureBuilder<List<Webtoon>>(
-            future: webtoonsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError ||
-                  !snapshot.hasData ||
-                  snapshot.data!.isEmpty) {
-                return Center(
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error, size: 64, color: Colors.red),
-                          const SizedBox(height: 16),
-                          const Text(
-                            "No webtoons available for this category. Try another filter.",
-                            style: TextStyle(fontSize: 16),
-                            textAlign: TextAlign.center,
+
+            Expanded(
+              child: provider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : (provider.error != null || provider.webtoons.isEmpty)
+                  ? Center(
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.error,
+                                size: 64,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                provider.error ??
+                                    "No webtoons available for this category. Try another filter.",
+                                style: const TextStyle(fontSize: 16),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: _refreshWebtoons,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry'),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: _refreshWebtoons,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
-                          ),
-                        ],
+                        ),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _refreshWebtoons,
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.75,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                        itemCount: provider.webtoons.length,
+                        itemBuilder: (context, index) {
+                          return WebtoonCard(webtoon: provider.webtoons[index]);
+                        },
                       ),
                     ),
-                  ),
-                );
-              }
-              final webtoons = snapshot.data!;
-              return RefreshIndicator(
-                onRefresh: _refreshWebtoons,
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: webtoons.length,
-                  itemBuilder: (context, index) {
-                    return WebtoonCard(webtoon: webtoons[index]);
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

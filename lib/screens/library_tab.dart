@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import '../models/webtoon.dart';
+import '../widgets/webtoon_card.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart'
+    as staggered;
 
 class LibraryTab extends StatefulWidget {
   const LibraryTab({super.key});
@@ -10,7 +15,7 @@ class LibraryTab extends StatefulWidget {
 
 class _LibraryTabState extends State<LibraryTab> {
   String? _username;
-  List<String> _savedWebtoons = [];
+  List<Webtoon> _savedWebtoons = [];
 
   @override
   void initState() {
@@ -21,7 +26,21 @@ class _LibraryTabState extends State<LibraryTab> {
   Future<void> _loadLibrary() async {
     final prefs = await SharedPreferences.getInstance();
     _username = prefs.getString('loggedInUser') ?? prefs.getString('username');
-    _savedWebtoons = prefs.getStringList('library_${_username}') ?? [];
+    final jsonList = prefs.getStringList('library_${_username}') ?? [];
+    _savedWebtoons = jsonList.map((jsonStr) {
+      try {
+        return Webtoon.fromJson(jsonDecode(jsonStr));
+      } catch (e) {
+        // Backward compat for old title strings
+        return Webtoon(
+          id: '',
+          title: jsonStr,
+          thumbnail: '',
+          description: '',
+          genres: [],
+        );
+      }
+    }).toList();
     if (mounted) {
       setState(() {});
     }
@@ -30,11 +49,10 @@ class _LibraryTabState extends State<LibraryTab> {
   Future<void> _removeWebtoon(int index) async {
     if (_username == null) return;
     final prefs = await SharedPreferences.getInstance();
-    _savedWebtoons.removeAt(index);
-    await prefs.setStringList('library_${_username}', _savedWebtoons);
-    if (mounted) {
-      setState(() {});
-    }
+    final jsonList = prefs.getStringList('library_${_username}') ?? [];
+    jsonList.removeAt(index);
+    await prefs.setStringList('library_${_username}', jsonList);
+    await _loadLibrary(); // Reload parsed list
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Removed from library')));
@@ -75,21 +93,20 @@ class _LibraryTabState extends State<LibraryTab> {
 
     return RefreshIndicator(
       onRefresh: _loadLibrary,
-      child: ListView.builder(
-        itemCount: _savedWebtoons.length,
-        itemBuilder: (context, index) {
-          final title = _savedWebtoons[index];
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.bookmark, color: Colors.purple),
-              title: Text(title),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => _removeWebtoon(index),
-              ),
-            ),
-          );
-        },
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.75,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: _savedWebtoons.length,
+          itemBuilder: (context, index) {
+            return WebtoonCard(webtoon: _savedWebtoons[index]);
+          },
+        ),
       ),
     );
   }
