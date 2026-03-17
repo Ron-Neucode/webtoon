@@ -3,9 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
-import 'providers/mangadex_provider.dart';
-import 'providers/jikan_provider.dart';
-import 'providers/kitsu_provider.dart';
+import 'providers/webtoon_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 
@@ -33,13 +31,7 @@ class MyApp extends StatelessWidget {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider(
-                create: (_) => MangadexProvider()..fetchWebtoons(),
-              ),
-              ChangeNotifierProvider(
-                create: (_) => JikanProvider()..fetchTopManga(),
-              ),
-              ChangeNotifierProvider(
-                create: (_) => KitsuProvider()..fetchManga(),
+                create: (_) => WebtoonProvider()..fetchWebtoons(),
               ),
             ],
             child: MaterialApp(

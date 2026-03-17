@@ -4,12 +4,12 @@ import 'package:logger/logger.dart';
 final logger = Logger();
 
 class TagService {
-  static const String mangadexBaseUrl = 'https://api.mangadex.org';
+  static const String baseUrl = 'https://api.mangadex.org';
 
   static Future<Map<String, String>> getTagMap() async {
     final dio = Dio();
     try {
-      final response = await dio.get('$mangadexBaseUrl/manga/tag?limit=100');
+      final response = await dio.get('$baseUrl/manga/tag?limit=100');
       if (response.statusCode == 200) {
         final Map<String, String> tagMap = {};
         final List<dynamic> tags = response.data['data'];

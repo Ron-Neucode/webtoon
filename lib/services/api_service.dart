@@ -6,22 +6,11 @@ import 'tag_service.dart';
 final logger = Logger();
 
 class ApiService {
-  // 3 API Providers
-  static const String mangadexBaseUrl =
-      'https://api.mangadex.org'; // Provider 1: Manga
-  static const String jikanBaseUrl =
-      'https://api.jikan.moe/v4'; // Provider 2: MAL
-  static const String kitsuBaseUrl =
-      'https://kitsu.io/api/edge'; // Provider 3: Manhwa/Manga
+  // Single API: Mangadex only
+  static const String baseUrl = 'https://api.mangadex.org';
 
-  static const String baseUrl = mangadexBaseUrl;
-
-  // Alias for existing screens (Mangadex)
-  static Future<List<Webtoon>> fetchWebtoons({int limit = 20, String? genre}) =>
-      fetchMangadexWebtoons(limit: limit, genre: genre);
-
-  // Mangadex endpoint
-  static Future<List<Webtoon>> fetchMangadexWebtoons({
+  // Endpoint 1: Fetch webtoons (w/ optional genre filter)
+  static Future<List<Webtoon>> fetchWebtoons({
     int limit = 20,
     String? genre,
   }) async {
@@ -42,7 +31,7 @@ class ApiService {
         }
       }
       final response = await dio.get(
-        '$mangadexBaseUrl/manga',
+        '$baseUrl/manga',
         queryParameters: queryParams,
       );
       if (response.statusCode == 200) {
@@ -59,43 +48,78 @@ class ApiService {
     return [];
   }
 
-  // Jikan (MAL) endpoint
-  static Future<List<Webtoon>> fetchJikanWebtoons({int limit = 20}) async {
+  // Endpoint 2: Search webtoons
+  static Future<List<Webtoon>> searchWebtoons(
+    String query, {
+    int limit = 20,
+  }) async {
     final dio = Dio();
     try {
       final response = await dio.get(
-        '$jikanBaseUrl/top/manga',
-        queryParameters: {'limit': limit},
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['data'];
-        return data.map((json) => Webtoon.fromJikanJson(json)).toList();
-      }
-    } catch (e) {
-      logger.e('Jikan API Error: $e');
-    }
-    return [];
-  }
-
-  // Kitsu endpoint
-  static Future<List<Webtoon>> fetchKitsuWebtoons({int limit = 20}) async {
-    final dio = Dio();
-    try {
-      final response = await dio.get(
-        '$kitsuBaseUrl/manga',
+        '$baseUrl/manga',
         queryParameters: {
-          'page[limit]': limit,
-          'fields[manga]': 'titles,posterImage,description',
-          'include': 'coverArt',
+          'limit': limit,
+          'title': query,
+          'includes[]': ['cover_art'],
         },
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['data'];
-        return data.map((json) => Webtoon.fromKitsuJson(json)).toList();
+        return data.map((json) => Webtoon.fromMangadexJson(json)).toList();
       }
+    } on DioException catch (e) {
+      logger.e('Search Dio Error: ${e.message}');
     } catch (e) {
-      logger.e('Kitsu API Error: $e');
+      logger.e('Search API Error: $e');
     }
     return [];
+  }
+
+  // Endpoint 3: Get webtoon details
+  static Future<Webtoon> getWebtoonDetails(String id) async {
+    final dio = Dio();
+    try {
+      final response = await dio.get('$baseUrl/manga/$id?includes[]=cover_art');
+      if (response.statusCode == 200) {
+        return Webtoon.fromMangadexJson(response.data['data']);
+      }
+    } on DioException catch (e) {
+      logger.e('Details Dio Error: ${e.message}');
+    } catch (e) {
+      logger.e('Details API Error: $e');
+    }
+    throw Exception('Failed to load details');
+  }
+
+  // Endpoint 4: Get top webtoons
+  static Future<List<Webtoon>> getTopWebtoons({int limit = 20}) async {
+    final dio = Dio();
+    try {
+      final response = await dio.get(
+        '$baseUrl/manga',
+        queryParameters: {
+          'limit': limit,
+          'order[createdAt]': 'desc',
+          'includes[]': ['cover_art'],
+        },
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data['data'];
+        return data.map((json) => Webtoon.fromMangadexJson(json)).toList();
+      }
+    } on DioException catch (e) {
+      logger.e('Top Dio Error: ${e.message}');
+    } catch (e) {
+      logger.e('Top API Error: $e');
+    }
+    return [];
+  }
+
+  // Endpoint 5: Get recommendations by genre
+  static Future<List<Webtoon>> getRecommendations(
+    String genre, {
+    int limit = 20,
+  }) async {
+    return fetchWebtoons(limit: limit, genre: genre);
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
-import '../providers/mangadex_provider.dart';
+import '../providers/webtoon_provider.dart';
 import '../widgets/webtoon_card.dart';
 import '../models/webtoon.dart';
 
@@ -14,13 +14,13 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> {
   Future<void> _refreshWebtoons() async {
-    final provider = Provider.of<MangadexProvider>(context, listen: false);
+    final provider = Provider.of<WebtoonProvider>(context, listen: false);
     await provider.fetchWebtoons(limit: 50);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MangadexProvider>(
+    return Consumer<WebtoonProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -38,7 +38,7 @@ class _HomeTabState extends State<HomeTab> {
                     Text(
                       provider.error ??
                           "No webtoons available. Check logs for errors.",
-                      style: TextStyle(fontSize: 16),
+                      style: const TextStyle(fontSize: 16),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),

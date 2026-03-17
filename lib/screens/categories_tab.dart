@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/mangadex_provider.dart';
+import '../providers/webtoon_provider.dart';
+import '../services/tag_service.dart';
 import '../widgets/webtoon_card.dart';
-import '../models/webtoon.dart';
 
 class CategoriesTab extends StatefulWidget {
   const CategoriesTab({super.key});
@@ -13,72 +13,84 @@ class CategoriesTab extends StatefulWidget {
 
 class _CategoriesTabState extends State<CategoriesTab> {
   String? selectedGenre;
-
-  final List<String> genres = [
-    "Action",
-    "Adventure",
-    "Comedy",
-    "Drama",
-    "Fantasy",
-    "Romance",
-    "Shounen",
-    "Seinen",
-    "Slice of Life",
-    "Supernatural",
-  ];
+  List<String> genresList = [];
+  bool isLoadingTags = true;
 
   @override
   void initState() {
     super.initState();
+    _loadGenres();
+  }
 
-    selectedGenre = null;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<MangadexProvider>(context, listen: false);
-      provider.fetchWebtoons(limit: 50);
-    });
+  Future<void> _loadGenres() async {
+    try {
+      final tagMap = await TagService.getTagMap();
+      setState(() {
+        genresList = tagMap.keys.map((key) => key.capitalize()).toList()
+          ..sort();
+        isLoadingTags = false;
+      });
+      // Initial load
+      if (mounted) {
+        Provider.of<WebtoonProvider>(
+          context,
+          listen: false,
+        ).fetchWebtoons(limit: 50);
+      }
+    } catch (e) {
+      if (mounted) setState(() => isLoadingTags = false);
+    }
   }
 
   Future<void> _loadWebtoons() async {
-    final provider = Provider.of<MangadexProvider>(context, listen: false);
-    await provider.fetchWebtoons(limit: 50, genre: selectedGenre ?? '');
+    if (selectedGenre == null) return;
+    final provider = Provider.of<WebtoonProvider>(context, listen: false);
+    await provider.fetchWebtoons(
+      limit: 50,
+      genre: selectedGenre!.toLowerCase(),
+    );
   }
 
-  Future<void> _refreshWebtoons() async {
-    await _loadWebtoons();
-  }
+  Future<void> _refreshWebtoons() async => _loadWebtoons();
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MangadexProvider>(
+    return Consumer<WebtoonProvider>(
       builder: (context, provider, child) {
         return Column(
           children: [
+            // Categories filter chips
             Container(
-              height: 60,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: genres.map((genre) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(genre),
-                        selected: selectedGenre == genre,
-                        onSelected: (selected) {
-                          setState(() {
-                            selectedGenre = selected ? genre : null;
-                          });
-                          _loadWebtoons();
-                        },
+              height: 80,
+              padding: const EdgeInsets.all(8),
+              child: isLoadingTags
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: genresList.map((genreName) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(genreName),
+                              selected:
+                                  selectedGenre == genreName.toLowerCase(),
+                              onSelected: (selected) {
+                                setState(() {
+                                  selectedGenre = selected
+                                      ? genreName.toLowerCase()
+                                      : null;
+                                });
+                                _loadWebtoons();
+                              },
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
+                    ),
             ),
 
+            // Webtoons grid
             Expanded(
               child: provider.isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -98,7 +110,7 @@ class _CategoriesTabState extends State<CategoriesTab> {
                               const SizedBox(height: 16),
                               Text(
                                 provider.error ??
-                                    "No webtoons available for this category. Try another filter.",
+                                    "No webtoons for category. Try another.",
                                 style: const TextStyle(fontSize: 16),
                                 textAlign: TextAlign.center,
                               ),
@@ -125,9 +137,8 @@ class _CategoriesTabState extends State<CategoriesTab> {
                               mainAxisSpacing: 8,
                             ),
                         itemCount: provider.webtoons.length,
-                        itemBuilder: (context, index) {
-                          return WebtoonCard(webtoon: provider.webtoons[index]);
-                        },
+                        itemBuilder: (context, index) =>
+                            WebtoonCard(webtoon: provider.webtoons[index]),
                       ),
                     ),
             ),
@@ -135,5 +146,12 @@ class _CategoriesTabState extends State<CategoriesTab> {
         );
       },
     );
+  }
+}
+
+// Extension for capitalize
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }
