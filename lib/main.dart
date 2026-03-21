@@ -24,34 +24,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(
+          create: (_) => WebtoonProvider()..fetchWebtoons(),
+        ),
+      ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
-          return MultiProvider(
-            providers: [
-              ChangeNotifierProvider(
-                create: (_) => WebtoonProvider()..fetchWebtoons(),
-              ),
-            ],
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              title: 'MangaVerse',
-              theme: lightTheme,
-              darkTheme: darkTheme,
-              themeMode: themeProvider.isDarkMode
-                  ? ThemeMode.dark
-                  : ThemeMode.light,
-              home: Builder(
-                builder: (context) {
-                  if (loggedInUsername != null &&
-                      loggedInUsername!.isNotEmpty) {
-                    return const DashboardScreen();
-                  } else {
-                    return const LoginScreen();
-                  }
-                },
-              ),
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'MangaVerse',
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: themeProvider.isDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
+            home: Builder(
+              builder: (context) {
+                if (loggedInUsername != null && loggedInUsername!.isNotEmpty) {
+                  return const DashboardScreen();
+                } else {
+                  return const LoginScreen();
+                }
+              },
             ),
           );
         },

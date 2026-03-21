@@ -3,8 +3,6 @@ import 'home_tab.dart';
 import 'categories_tab.dart';
 import 'library_tab.dart';
 import 'profile_tab.dart';
-import 'login_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

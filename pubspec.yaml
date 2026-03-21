@@ -18,7 +18,7 @@ dependencies:
   flutter_animate: ^4.5.0
 
   # State Management
-  provider: ^6.1.2
+  provider: ^6.0.5
 
   # Networking
   dio: ^5.4.0

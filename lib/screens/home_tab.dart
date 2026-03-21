@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+// import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:provider/provider.dart';
 import '../providers/webtoon_provider.dart';
 import '../widgets/webtoon_card.dart';
@@ -13,60 +13,135 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load initial webtoons
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WebtoonProvider>(
+        context,
+        listen: false,
+      ).fetchWebtoons(limit: 50);
+    });
+  }
+
   Future<void> _refreshWebtoons() async {
-    final provider = Provider.of<WebtoonProvider>(context, listen: false);
-    await provider.fetchWebtoons(limit: 50);
+    Provider.of<WebtoonProvider>(
+      context,
+      listen: false,
+    ).fetchWebtoons(limit: 50);
+  }
+
+  void _onSearchSubmit(String query) {
+    if (query.trim().isNotEmpty) {
+      Provider.of<WebtoonProvider>(
+        context,
+        listen: false,
+      ).searchWebtoons(query.trim());
+      setState(() => _isSearching = true);
+    }
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() => _isSearching = false);
+    Provider.of<WebtoonProvider>(
+      context,
+      listen: false,
+    ).fetchWebtoons(limit: 50);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<WebtoonProvider>(
       builder: (context, provider, child) {
-        if (provider.isLoading) {
+        if (provider.isLoading &&
+            provider.webtoons.isEmpty &&
+            provider.searchResults.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (provider.error != null || provider.webtoons.isEmpty) {
-          return Center(
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      provider.error ??
-                          "No webtoons available. Check logs for errors.",
-                      style: const TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
+
+        final List<Webtoon> displayWebtoons = _isSearching
+            ? provider.searchResults
+            : provider.webtoons;
+
+        final String title = _isSearching
+            ? '${displayWebtoons.length} Search Results'
+            : 'Latest Webtoons';
+
+        return Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onSubmitted: _onSearchSubmit,
+                      decoration: InputDecoration(
+                        hintText: 'Search webtoons by title...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon:
+                            _isSearching && _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: _clearSearch,
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25.0),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: _refreshWebtoons,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          );
-        }
-        final webtoons = provider.webtoons;
-        return RefreshIndicator(
-          onRefresh: _refreshWebtoons,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: MasonryGridView.count(
-              crossAxisCount: 2,
-              itemCount: webtoons.length,
-              itemBuilder: (context, index) =>
-                  WebtoonCard(webtoon: webtoons[index]),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
+            // Results header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
-          ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _isSearching
+                    ? () async => _onSearchSubmit(_searchController.text)
+                    : _refreshWebtoons,
+                child: displayWebtoons.isEmpty && provider.isLoading
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Loading webtoons...'),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(8.0),
+                        itemCount: displayWebtoons.length,
+                        itemBuilder: (context, index) {
+                          return WebtoonCard(webtoon: displayWebtoons[index]);
+                        },
+                      ),
+              ),
+            ),
+          ],
         );
       },
     );

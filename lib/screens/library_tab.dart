@@ -3,8 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/webtoon.dart';
 import '../widgets/webtoon_card.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart'
-    as staggered;
 
 class LibraryTab extends StatefulWidget {
   const LibraryTab({super.key});
@@ -26,7 +24,7 @@ class _LibraryTabState extends State<LibraryTab> {
   Future<void> _loadLibrary() async {
     final prefs = await SharedPreferences.getInstance();
     _username = prefs.getString('loggedInUser') ?? prefs.getString('username');
-    final jsonList = prefs.getStringList('library_${_username}') ?? [];
+    final jsonList = prefs.getStringList('library_$_username') ?? [];
     _savedWebtoons = jsonList.map((jsonStr) {
       try {
         return Webtoon.fromJson(jsonDecode(jsonStr));
@@ -49,10 +47,11 @@ class _LibraryTabState extends State<LibraryTab> {
   Future<void> _removeWebtoon(int index) async {
     if (_username == null) return;
     final prefs = await SharedPreferences.getInstance();
-    final jsonList = prefs.getStringList('library_${_username}') ?? [];
+    final jsonList = prefs.getStringList('library_$_username') ?? [];
     jsonList.removeAt(index);
-    await prefs.setStringList('library_${_username}', jsonList);
+    await prefs.setStringList('library_$_username', jsonList);
     await _loadLibrary(); // Reload parsed list
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Removed from library')));

@@ -30,13 +30,6 @@ class _CategoriesTabState extends State<CategoriesTab> {
           ..sort();
         isLoadingTags = false;
       });
-      // Initial load
-      if (mounted) {
-        Provider.of<WebtoonProvider>(
-          context,
-          listen: false,
-        ).fetchWebtoons(limit: 50);
-      }
     } catch (e) {
       if (mounted) setState(() => isLoadingTags = false);
     }
@@ -44,11 +37,10 @@ class _CategoriesTabState extends State<CategoriesTab> {
 
   Future<void> _loadWebtoons() async {
     if (selectedGenre == null) return;
-    final provider = Provider.of<WebtoonProvider>(context, listen: false);
-    await provider.fetchWebtoons(
-      limit: 50,
-      genre: selectedGenre!.toLowerCase(),
-    );
+    Provider.of<WebtoonProvider>(
+      context,
+      listen: false,
+    ).fetchWebtoons(limit: 50, genre: selectedGenre!.toLowerCase());
   }
 
   Future<void> _refreshWebtoons() async => _loadWebtoons();
